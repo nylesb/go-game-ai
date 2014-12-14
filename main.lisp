@@ -23,13 +23,32 @@
         (setf move (process-move (read))))
       (setf available-moves (delete move available-moves :test #'equal))
       (at move board :set 'B)
-      ;; AI's move
-      (setf move (make-move available-moves))
+      (setf avilable-moves (append available-moves (check-captures move board)))
+      ;; 2-Player's move
+      (print-board board)
+      (loop while (not (find move available-moves :test #'equal)) do
+        (princ (format nil "~%Invalid move!  Try again: "))
+        (setf move (process-move (read))))
       (setf available-moves (delete move available-moves :test #'equal))
       (at move board :set 'W)
+      (setf available-moves (append available-moves (check-captures move board)))
+      ;; AI's move
+      ;(setf move (make-move available-moves))
+      ;(setf available-moves (delete move available-moves :test #'equal))
+      ;(at move board :set 'W)
+      ;(check-captures move board)
       ;; Display
       (print-board board)
       (princ (format nil "~%Your move: ")))))
+
+(defun neighbors (position)
+  "Returns a list containing a position and all its neighbors."
+  (let* ((row (first position))
+         (col (second position))
+         (neighbors (list (list (- row 1) col))))
+    (nconc neighbors (list (list row (+ col 1))
+                           (list (+ row 1) col)
+                           (list row (- col 1))))))
 
 (defun print-board (board)
   "Formats board for readable printing"
@@ -81,7 +100,7 @@
   (let ((result nil)
         (board-color (at position board))
         (marker 'M))
-    (if (equal board-color '-)
+    (if (or (equal board-color '-) (equal board-color 'X))
         (return-from is-free t))
     (labels
       ((flood-fill (position board old-color new-color)
@@ -109,14 +128,27 @@
       (flood-fill position board marker board-color)
       result)))
 
-(defun capture (position board old-color)
-  "Removes the chain covering position on board."
-   (let ((row (first position))
-        (col (second position))
-        (color (at position board)))
-    (when (equal color old-color)
-      (at position board :set '-)
-      (capture (list (- row 1) col) board old-color)
-      (capture (list row (+ col 1)) board old-color)
-      (capture (list (+ row 1) col) board old-color)
-      (capture (list row (- col 1)) board old-color))))
+(defun check-captures (position board)
+  "After a move has been made, checks what captures might happen.  Captures are
+  performed and the removed positions are returned."
+  (let ((removed nil)
+        (captured-list nil))
+    (labels ((capture (position board old-color)
+               "Removes the chain covering position on board."
+               (let ((row (first position))
+                    (col (second position))
+                    (color (at position board)))
+                (when (equal color old-color)
+                  (at position board :set '-)
+                  (setf captured-list (nconc captured-list (list position)))
+                  (capture (list (- row 1) col) board old-color)
+                  (capture (list row (+ col 1)) board old-color)
+                  (capture (list (+ row 1) col) board old-color)
+                  (capture (list row (- col 1)) board old-color)))))
+    (dolist (space (neighbors position))
+      (unless (is-free space board)
+        (setf removed t)
+        (capture space board (at space board))))
+    (if (and (not removed) (not (is-free position board)))
+        (capture position board))
+    (print captured-list))))
