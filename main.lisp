@@ -23,7 +23,7 @@
         (setf move (process-move (read))))
       (setf available-moves (delete move available-moves :test #'equal))
       (at move board :set 'B)
-      (setf avilable-moves (append available-moves (check-captures move board)))
+      (setf avilable-moves (append available-moves (perform-captures move board)))
       ;; 2-Player's move
       (print-board board)
       (loop while (not (find move available-moves :test #'equal)) do
@@ -31,18 +31,18 @@
         (setf move (process-move (read))))
       (setf available-moves (delete move available-moves :test #'equal))
       (at move board :set 'W)
-      (setf available-moves (append available-moves (check-captures move board)))
+      (setf available-moves (append available-moves (perform-captures move board)))
       ;; AI's move
       ;(setf move (make-move available-moves))
       ;(setf available-moves (delete move available-moves :test #'equal))
       ;(at move board :set 'W)
-      ;(check-captures move board)
+      ;(perform-captures move board)
       ;; Display
       (print-board board)
       (princ (format nil "~%Your move: ")))))
 
 (defun neighbors (position)
-  "Returns a list containing a position and all its neighbors."
+  "Returns a list containing all neighbors of a position."
   (let* ((row (first position))
          (col (second position))
          (neighbors (list (list (- row 1) col))))
@@ -128,7 +128,7 @@
       (flood-fill position board marker board-color)
       result)))
 
-(defun check-captures (position board)
+(defun perform-captures (position board)
   "After a move has been made, checks what captures might happen.  Captures are
   performed and the removed positions are returned."
   (let ((removed nil)
@@ -152,3 +152,52 @@
     (if (and (not removed) (not (is-free position board)))
         (capture position board))
     (print captured-list))))
+
+(defun is-eye (position board)
+  "Position is an empty space on board. Determines if it is an eye (a space
+  surrounded by 1 chain of all the same color).  Returns eye color if true."
+  (let ((result 0) ; How many surrounding stones we've found
+        (goal 4) ; How many surrounding stones we need
+        (origin 'O) ; To remember where we started at
+        (marker 'M) ; A token to see where we've been
+        (neighbors (neighbors position))
+        (color nil)
+        (row (first position))
+        (col (second position))
+        (board-length (length board)))
+    (labels
+      ((flood-fill (position board old-color new-color)
+         "Fills up the chain of color, replacing spaces with a marker.
+         If original space is found, coloring stops."
+         (let ((row (first position))
+               (col (second position))
+               (color (at position board)))
+           (when (equal color origin)
+             (setf result (+ result 1)))
+           (if (equal color new-color)
+               (return-from flood-fill nil))
+           (when (equal color old-color)
+             (at position board :set new-color)
+             (flood-fill (list (- row 1) col) board old-color new-color)
+             (flood-fill (list row (+ col 1)) board old-color new-color)
+             (flood-fill (list (+ row 1) col) board old-color new-color)
+             (flood-fill (list row (- col 1)) board old-color new-color)))))
+      ;; Check for one chain surrounding position
+      ;; After a B or W stone found, no need to check other neighbors
+      (block control
+        (dolist (space neighbors)
+          (setf color (at space board))
+          (when (or (equal color 'W) (equal color 'B))
+            (at position board :set origin)
+            (flood-fill space board color marker)
+            (at position board :set '-)
+            (flood-fill space board marker color)
+            (return-from control nil))))
+      ;; Reduce goal if stone on edge
+      (if (or (= row 0) (= row board-length))
+          (setf goal (- goal 1)))
+      (if (or (= col 0) (= col board-length))
+          (setf goal (- goal 1)))
+      (if (= result goal)
+          color
+          nil))))
