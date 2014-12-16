@@ -207,10 +207,17 @@
             (flood-fill space board marker color)
             (return-from control nil))))
       ;; Reduce goal if stone on edge
-      (if (or (= row 0) (= row board-length))
+      (if (or (= row 0) (= row (- board-length 1)))
           (setf goal (- goal 1)))
-      (if (or (= col 0) (= col board-length))
+      (if (or (= col 0) (= col (- board-length 1)))
           (setf goal (- goal 1)))
       (if (= result goal)
           color
           nil))))
+
+(defun game-over (available-moves board)
+  "Evaluates the board to determine if only eyes remain"
+  (dolist (space available-moves)
+    (unless (is-eye space board)
+      (return-from game-over nil)))
+  t)
