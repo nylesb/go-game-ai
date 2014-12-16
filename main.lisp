@@ -3,7 +3,10 @@
   (let* ((board-size 9)
          (board (list (make-list board-size :initial-element '-)))
          (move nil)
-         (available-moves '((0 0))))
+         (available-moves '((0 0)))
+         (captures nil)
+         (w-captures 0)
+         (b-captures 0))
     ;; Populate initial available moves
     (dotimes (i board-size)
       (dotimes (j board-size)
@@ -23,7 +26,12 @@
         (setf move (process-move (read))))
       (setf available-moves (delete move available-moves :test #'equal))
       (at move board :set 'B)
-      (setf avilable-moves (append available-moves (perform-captures move board)))
+      (if (= (length captures) 1) ; Ko has passed, can add to moves again
+        (setf available-moves (append available-moves captures)))
+      (setf captures (perform-captures move board))
+      (when (> (length captures) 1) ; Make sure no ko has happened
+        (setf available-moves (append available-moves captures))
+        (setf b-captures (+ b-captures (length captures))))
       ;; 2-Player's move
       (print-board board)
       (loop while (not (find move available-moves :test #'equal)) do
@@ -31,7 +39,12 @@
         (setf move (process-move (read))))
       (setf available-moves (delete move available-moves :test #'equal))
       (at move board :set 'W)
-      (setf available-moves (append available-moves (perform-captures move board)))
+      (if (= (length captures) 1) ; Ko has passed, can add to moves again
+        (setf available-moves (append available-moves captures)))
+      (setf captures (perform-captures move board))
+      (when (> (length captures) 1) ; Make sure no ko has happened
+        (setf available-moves (append available-moves captures))
+        (setf w-captures (+ w-captures (length captures))))
       ;; AI's move
       ;(setf move (make-move available-moves))
       ;(setf available-moves (delete move available-moves :test #'equal))
@@ -151,7 +164,7 @@
         (capture space board (at space board))))
     (if (and (not removed) (not (is-free position board)))
         (capture position board))
-    (print captured-list))))
+    captured-list)))
 
 (defun is-eye (position board)
   "Position is an empty space on board. Determines if it is an eye (a space
