@@ -1,12 +1,15 @@
+(load "minimax.lisp")
+
 (defun play-game ()
   "Does the interfacing for a 2-player Go game."
-  (let* ((board-size 9)
+  (let* ((board-size 4)
          (board (list (make-list board-size :initial-element '-)))
          (move nil)
          (available-moves '((0 0)))
          (captures nil)
          (w-captures 0)
-         (b-captures 0))
+         (b-captures 0)
+         (ko '(nil)))
     ;; Populate initial available moves
     (dotimes (i board-size)
       (dotimes (j board-size)
@@ -24,29 +27,19 @@
       (loop while (not (find move available-moves :test #'equal)) do
         (princ (format nil "~%Invalid move!  Try again: "))
         (setf move (process-move (read))))
-      (setf available-moves (delete move available-moves :test #'equal))
-      (at move board :set 'B)
-      (if (= (length captures) 1) ; Ko has passed, can add to moves again
-        (setf available-moves (append available-moves captures)))
-      (setf captures (perform-captures move board))
-      (when (> (length captures) 1) ; Make sure no ko has happened
-        (setf available-moves (append available-moves captures))
-        (setf b-captures (+ b-captures (length captures))))
-      ;; 2-Player's move
+      (make-move move 'B available-moves ko board)
+      
+      ;;; 2-Player's move
       (print-board board)
+      (princ (format nil "~%Your move: "))
+      (setf move (process-move (read)))
       (loop while (not (find move available-moves :test #'equal)) do
         (princ (format nil "~%Invalid move!  Try again: "))
         (setf move (process-move (read))))
-      (setf available-moves (delete move available-moves :test #'equal))
-      (at move board :set 'W)
-      (if (= (length captures) 1) ; Ko has passed, can add to moves again
-        (setf available-moves (append available-moves captures)))
-      (setf captures (perform-captures move board))
-      (when (> (length captures) 1) ; Make sure no ko has happened
-        (setf available-moves (append available-moves captures))
-        (setf w-captures (+ w-captures (length captures))))
-      ;; AI's move
-      ;(setf move (make-move available-moves))
+      (make-move move 'W available-moves ko board)
+      
+      ;;; AI's move
+      ;(setf move (random-move available-moves))
       ;(setf available-moves (delete move available-moves :test #'equal))
       ;(at move board :set 'W)
       ;(perform-captures move board)
@@ -91,7 +84,28 @@
     (list (position (char symbol-string 0) "ABCDEFGHIJKLMNOPQRS")
           (- (parse-integer (subseq symbol-string 1)) 1))))
 
-(defun make-move (available-moves)
+(defun make-move (move color available-moves ko board)
+  "Updates board and available-moves with the given move for color.
+  Note: ko is a 1-element list containing nil or the ko position.
+  Returns number of captures made."
+  (let ((captures nil))
+    (setf available-moves (delete move available-moves :test #'equal))
+    (at move board :set color)
+    (when (first ko) ; Ko has passed, can add to moves again
+      (print ko)
+      (append-modify available-moves (list (copy-list (first ko)))))
+    (setf captures (perform-captures move board))
+    (if (> (length captures) 1) ; Check for a new ko
+        (append-modify available-moves captures)
+        (setf (first ko) (first captures)))
+    (length captures)))
+
+(defun append-modify (list1 list2)
+  "Redefines list1 to list2 appended to list1.  Works inside functions which
+  takes lists as parameters to update the actual variable put into the function."
+  (setf (cdr list1) (append (cdr list1) list2)))
+
+(defun random-move (available-moves)
   "Returns a valid random move given the current board."
   (nth (random (length available-moves)) available-moves))
 
@@ -216,7 +230,7 @@
           nil))))
 
 (defun game-over (available-moves board)
-  "Evaluates the board to determine if only eyes remain"
+  "Evaluates the board to determine if only eyes remain."
   (dolist (space available-moves)
     (unless (is-eye space board)
       (return-from game-over nil)))
