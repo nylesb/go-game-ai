@@ -28,6 +28,7 @@
         (princ (format nil "~%Invalid move!  Try again: "))
         (setf move (process-move (read))))
       (make-move move 'B available-moves ko board)
+      (print available-moves)
       
       ;;; 2-Player's move
       (print-board board)
@@ -89,7 +90,10 @@
   Note: ko is a 1-element list containing nil or the ko position.
   Returns number of captures made."
   (let ((captures nil))
-    (setf available-moves (delete move available-moves :test #'equal))
+    (if (equal (first available-moves) move) ; Delete doesn't work for 1st elt
+        (progn (setf (first available-moves) (first (last available-moves)))
+               (delete (first (last available-moves)) available-moves :test #'equal))
+        (delete move available-moves :test #'equal))
     (at move board :set color)
     (when (first ko) ; Ko has passed, can add to moves again
       (print ko)
@@ -158,7 +162,8 @@
 (defun perform-captures (position board)
   "After a move has been made, checks what captures might happen.  Captures are
   performed and the removed positions are returned."
-  (let ((removed nil)
+  (let ((color (at position board))
+        (removed nil)
         (captured-list nil))
     (labels ((capture (position board old-color)
                "Removes the chain covering position on board."
@@ -173,11 +178,12 @@
                   (capture (list (+ row 1) col) board old-color)
                   (capture (list row (- col 1)) board old-color)))))
     (dolist (space (neighbors position))
-      (unless (is-free space board)
+      (unless (or (is-free space board)
+                  (equal color (at space board)))
         (setf removed t)
         (capture space board (at space board))))
     (if (and (not removed) (not (is-free position board)))
-        (capture position board))
+        (capture position board color))
     captured-list)))
 
 (defun is-eye (position board)
