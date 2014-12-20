@@ -2,7 +2,7 @@
 
 (defun play-game ()
   "Does the interfacing for a 2-player Go game."
-  (let* ((board-size 4)
+  (let* ((board-size 9)
          (board (list (make-list board-size :initial-element '-)))
          (move nil)
          (available-moves '((0 0)))
@@ -30,19 +30,19 @@
       (make-move move 'B available-moves ko board)
       
       ;;; 2-Player's move
-      (print-board board)
-      (princ (format nil "~%Your move: "))
-      (setf move (process-move (read)))
-      (loop while (not (find move available-moves :test #'equal)) do
-        (princ (format nil "~%Invalid move!  Try again: "))
-        (setf move (process-move (read))))
-      (make-move move 'W available-moves ko board)
+      ;(print-board board)
+      ;(princ (format nil "~%Your move: "))
+      ;(setf move (process-move (read)))
+      ;(loop while (not (find move available-moves :test #'equal)) do
+      ;  (princ (format nil "~%Invalid move!  Try again: "))
+      ;  (setf move (process-move (read))))
+      ;(make-move move 'W available-moves ko board)
       
       ;;; AI's move
-      ;(setf move (random-move available-moves))
-      ;(setf available-moves (delete move available-moves :test #'equal))
-      ;(at move board :set 'W)
-      ;(perform-captures move board)
+      (setf move (minimax-move available-moves 'W board))
+      (setf available-moves (delete move available-moves :test #'equal))
+      (make-move move 'W available-moves ko board)
+      
       ;; Display
       (print-board board)
       (princ (format nil "~%Your move: ")))))
