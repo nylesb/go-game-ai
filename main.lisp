@@ -28,7 +28,6 @@
         (princ (format nil "~%Invalid move!  Try again: "))
         (setf move (process-move (read))))
       (make-move move 'B available-moves ko board)
-      (print available-moves)
       
       ;;; 2-Player's move
       (print-board board)
@@ -89,14 +88,15 @@
   "Updates board and available-moves with the given move for color.
   Note: ko is a 1-element list containing nil or the ko position.
   Returns number of captures made."
-  (let ((captures nil))
+  (let ((captures nil)
+        (last nil))
     (if (equal (first available-moves) move) ; Delete doesn't work for 1st elt
-        (progn (setf (first available-moves) (first (last available-moves)))
-               (delete (first (last available-moves)) available-moves :test #'equal))
+        (progn (setf last (first (last available-moves)))
+               (delete last available-moves :test #'equal)
+               (setf (car available-moves) last))
         (delete move available-moves :test #'equal))
     (at move board :set color)
     (when (first ko) ; Ko has passed, can add to moves again
-      (print ko)
       (append-modify available-moves (list (copy-list (first ko)))))
     (setf captures (perform-captures move board))
     (if (> (length captures) 1) ; Check for a new ko
