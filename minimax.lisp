@@ -41,10 +41,37 @@
       (if (> depth 1)
           (generate-children child (- depth 1))))))
 
-(defun board-eval (board)
+(defun board-eval (board color)
   "Evaluates the strength of color given a board.  The specifics of how this
   is done will change based on testing and what tends to make stronger AI."
-  (random 1000))
+  (let* ((board-copy (copy-tree board))
+         (board-size (length board-copy))
+         (positions (list (list 0 0)))
+         (range 2)
+         (strength '(3 2 1))
+         (token nil))
+    (dotimes (i board-size)
+      (dotimes (j board-size)
+        (nconc positions (list (list i j)))))
+    (setf positions (rest positions)) ; Fixes double '(0 0) issue
+    (dolist (space positions) ; Initialize board with zeroes
+      (if (equal (at space board-copy) '-)
+          (at space board-copy :set 0)))
+    (labels ((fill (position sign depth)
+                "Fills in influence points around position"
+                (let ((neighbors (neighbors position)))
+                  (print neighbors)
+                  (dolist (space neighbors)
+                    (if (> depth 1)
+                        (fill space sign (- depth 1)))
+                    (if (numberp (at space board-copy))
+                        (at space board-copy :set (+ (at space board-copy) (* sign depth))))))))
+      (dolist (space positions) ; Begin destributing influence points.
+        (setf token (at space board-copy))
+        (cond ((equal token color) (fill space 1 range))
+              ((numberp token) nil)
+              (t (fill space -1 range))))
+      (print-board board-copy))))
 
 (defun set-values (root max)
   "Sets the value of node and all descendents of the root using the minimax rules.
