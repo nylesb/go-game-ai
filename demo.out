@@ -1,0 +1,255 @@
+;; Dribble of #<IO TERMINAL-STREAM> started on 2014-12-20 20:34:09.
+#<OUTPUT BUFFERED FILE-STREAM CHARACTER #P"demo.out">
+[2]> (load "demo.lisp")
+;; Loading file demo.lisp ...
+;;  Loading file main.lisp ...
+;;   Loading file minimax.lisp ...
+;;   Loaded file minimax.lisp
+;;  Loaded file main.lisp
+"Working with the following board:" 
+  1 2 3 4
+A W - - - A
+B - - - - B
+C - - - - C
+D - - - - D
+  1 2 3 4
+
+"The board evaluator applied to this board. We should expect 10 from:"
+  1 2 3 4
+A W 3 1 - A
+B 3 2 - - B
+C 1 - - - C
+D - - - - D
+  1 2 3 4
+
+"Here is the result from the evaluator:"
+10
+"Working with a smaller set of available-moves (for a more readable tree)." 
+((0 1) (0 2) (1 0) (1 1) (1 2)) 
+"The minimax tree. The leftmost node is the root, and each indent
+       indicates a level down.  The root's choice starts with a max, then the
+       next choice is a min, then max." 
+7
+    4
+        4
+            -1
+            -8
+            4
+        11
+            10
+            11
+            8
+        14
+            14
+            5
+            12
+        5
+            5
+            -4
+            4
+    1
+        14
+            12
+            11
+            14
+        14
+            5
+            14
+            12
+        3
+            -4
+            2
+            3
+        1
+            -8
+            -2
+            1
+    4
+        16
+            16
+            11
+            12
+        12
+            11
+            8
+            12
+        7
+            4
+            2
+            7
+        4
+            4
+            -2
+            -1
+    1
+        19
+            19
+            14
+            12
+        15
+            8
+            8
+            15
+        19
+            12
+            14
+            19
+        1
+            -1
+            1
+            -1
+    7
+        19
+            19
+            12
+            16
+        15
+            10
+            12
+            15
+        19
+            14
+            12
+            19
+        7
+            5
+            3
+            7
+;; Loaded file demo.lisp
+T
+[3]> (play-game)
+
+  1 2 3 4 5
+A - - - - - A
+B - - - - - B
+C - - - - - C
+D - - - - - D
+E - - - - - E
+  1 2 3 4 5
+Input a move of the form L#, where L is a letter and # is a number.
+           Typing end quits the game.
+           Anything else errors out of the game.
+Your move: C3
+Computer's move: (1 3)
+  1 2 3 4 5
+A - - - - - A
+B - - - W - B
+C - - B - - C
+D - - - - - D
+E - - - - - E
+  1 2 3 4 5
+
+Your move: C4
+Computer's move: (1 1)
+  1 2 3 4 5
+A - - - - - A
+B - W - W - B
+C - - B B - C
+D - - - - - D
+E - - - - - E
+  1 2 3 4 5
+
+Your move: C2
+Computer's move: (3 3)
+  1 2 3 4 5
+A - - - - - A
+B - W - W - B
+C - B B B - C
+D - - - W - D
+E - - - - - E
+  1 2 3 4 5
+
+Your move: B3
+Computer's move: (3 0)
+  1 2 3 4 5
+A - - - - - A
+B - W B W - B
+C - B B B - C
+D W - - W - D
+E - - - - - E
+  1 2 3 4 5
+
+Your move: A2
+Computer's move: (1 0)
+  1 2 3 4 5
+A - B - - - A
+B W W B W - B
+C - B B B - C
+D W - - W - D
+E - - - - - E
+  1 2 3 4 5
+
+Your move: C1
+Computer's move: (3 2)
+  1 2 3 4 5
+A - B - - - A
+B W W B W - B
+C B B B B - C
+D W - W W - D
+E - - - - - E
+  1 2 3 4 5
+
+Your move: A1
+Computer's move: (1 1)
+  1 2 3 4 5
+A B B - - - A
+B - W B W - B
+C B B B B - C
+D W - W W - D
+E - - - - - E
+  1 2 3 4 5
+
+Your move: D2
+Computer's move: (0 3)
+  1 2 3 4 5
+A B B - W - A
+B - W B W - B
+C B B B B - C
+D W B W W - D
+E - - - - - E
+  1 2 3 4 5
+
+Your move: E3
+Computer's move: (4 3)
+  1 2 3 4 5
+A B B - W - A
+B - W B W - B
+C B B B B - C
+D W B W W - D
+E - - B W - E
+  1 2 3 4 5
+
+Your move: D5
+Computer's move: (4 1)
+  1 2 3 4 5
+A B B - W - A
+B - W B W - B
+C B B B B - C
+D W B W W B D
+E - W - W - E
+  1 2 3 4 5
+
+Your move: E5
+Computer's move: (2 4)
+  1 2 3 4 5
+A B B - W - A
+B - W B W - B
+C B B B B W C
+D W B W W - D
+E - W - W - E
+  1 2 3 4 5
+
+Your move: E1
+Computer's move: (0 2)
+  1 2 3 4 5
+A B B W W - A
+B - W B W - B
+C B B B B W C
+D - B W W - D
+E B W - W - E
+  1 2 3 4 5
+
+Your move: end
+NIL
+[4]> (dribble)
+;; Dribble of #<IO TERMINAL-STREAM> finished on 2014-12-20 20:37:52.

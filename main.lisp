@@ -5,7 +5,7 @@
 
 (defun play-game ()
   "Does the interfacing for a 2-player Go game, one potentially an AI."
-  (let* ((board-size 6)
+  (let* ((board-size 5)
          (board (list (make-list board-size :initial-element '-)))
          (move nil)
          (available-moves nil)
@@ -21,6 +21,9 @@
         (push (list i j) available-moves)))
     ;; Begin game playing
     (print-board board)
+    (princ "Input a move of the form L#, where L is a letter and # is a number.
+           Typing end quits the game.
+           Anything else errors out of the game.")
     (princ (format nil "~%Your move: "))
     (loop while (not (equal (setf move (read)) 'end)) do
       ;; First player's move
@@ -40,7 +43,8 @@
       ;(make-move move 'W available-moves ko board)
       
       ;; Use for AI as second player.
-      (setf move (minimax-move available-moves 'W board))
+      (princ "Computer's move: ")
+      (princ (setf move (minimax-move available-moves 'W board)))
       (setf w-captures (+ w-captures (make-move move 'W available-moves ko board)))
       
       ;; Display

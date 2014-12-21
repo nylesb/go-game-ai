@@ -10,6 +10,7 @@ How to use
 Go game rules
 Project goals
 Project results / reflection
+Demo discussion
 
 ========== Introduction ==========
 
@@ -21,19 +22,23 @@ go-game-ai/
     minimax.lisp
         Contains the functions necessary to setup and play a 2-person game of go.  There are no components of the AI parts of the application in this file.
     README.md
-        This file.  Outlines the project.
+        This file.  Outlines the project and reflects on the project's creation.
     minimax.lisp
         The implementation for the minimax algorithm.
+    demo.lisp
+        Runs the minimax algorithm on a small board and displays the values it returns, just to verify that it works properly.
+    demo.out
+        Contains output from demo.lisp, as well as a sample game played out between me (black) and the computer (white).
 
 ========== How to use ==========
 
 If you would like to play a game of Go, load up a lisp shell and enter the command (load "main.lisp"), then to start the game use the command (play-game).  Moves must be entered in the form "E7" where the letter indicates the row and the number indicates the column.
 
-Settings need to be modified directly in the code itself.  One can change between a having the second player be human or an AI by commenting or uncommenting those sections under the function "play-game" in the file main.lisp.  One can adjust the board size by modifying the variable "board-size" in the "play-game" function.
+Settings can be adjusted, but need to be modified directly in the code itself.  One can change between a having the second player be human or an AI by commenting or uncommenting those sections under the function "play-game" in the file main.lisp.  One can adjust the board size by modifying the variable "board-size" in the "play-game" function.
 
 ========== Go game rules ==========
 
-The following will be a very brief description of the rules of Go.  
+The following will be a very brief description of the rules of Go.  If you know how to play Go you may skip this section.
 
 Go is a game is game for territory.  The standard game is a 19x19 size board, but many smaller versions exist primarily for learning (9x9 and 13x13).  Black always starts.  When it's any player's move they are allowed to play their marker, called stones, on any non-occupied space on the board, with a couple exceptions described later.
 
@@ -47,9 +52,9 @@ Play stops when both players see no profitable moves and both pass in succession
 
 ========== Project goals ==========
 
-The goals of this project were very open.  Given that I know how difficult AI search strategies become for Go, I was entirely unsure what I could accomplish.  At the very least implementing a playable version of Go where a potential AI could access the information it needed to was an important goal from the start.  It didn't help that at the beginning of the project I had never actually played a single game of Go before.
+The goals of this project were very open.  Given that I know how difficult AI search strategies become for Go, I was entirely unsure what I could accomplish.  At the very least implementing a playable version of Go where an AI could access the information it needed to determine moves (even if bad ones) was the base goal.  Unfortunately I didn't have specifics in mind besides that, since until deciding on writing an AI for Go I had never learned how to play the game.
 
-So my first goal was to learn how to actually play Go.  Developing an AI would be pretty tough without a base understanding of the game.  I also wanted to do some research into AI techniques for Go and to try to see how I could apply the things which we worked on in class to a practical problem.
+So my first goal was to learn how to actually play Go.  Developing an AI would be pretty tough without a base understanding of the game.  I also wanted to do some research into AI techniques for Go and to try to see how I could apply the things which we worked on in class to a practical problem.  Lastly, I was hoping that I could get into looking at optimization of my code to improve the run time of my searches.
 
 ========== Project results / reflection ==========
 
@@ -73,20 +78,24 @@ While in theory I knew this idea had merit, I was still not confident that this 
 
 So despite the efforts for learning this algorithm, I decided that to for sure get an algorithm done I wanted to do the minimax algorithm.  I did this in a couple steps.  First I made a function to generate the nodes and the board states they represented.  Before looking at any board values this was important to make sure it was working properly.   Then I made a function to calculate the values, using the minimax algorithm, each node should take.
 
-The board evaluator that I used is a very simple one.  It turns the open spaces into digits, then looks at each stone on the board and radiates influence out from that stone, stronger near the stone and weaker farther away.  No influence is given to a space occupied by a stone, and stones of the opposite color radiate negative influence.  For example a single stone would radiate influence like this:
+The board evaluator that I used is a very simple one.  It turns the open spaces into digits, then looks at each stone on the board and radiates influence out from that stone, stronger near the stone and weaker farther away.  Diagonals are slightly stronger than being just two units away. No influence is given to a space occupied by a stone, and stones of the opposite color radiate negative influence.  After putting the influence on the board, the evalutor simply adds up all of the influence.  For example a single stone would radiate influence like this:
 
-0 0 0 1 0 0 0
-0 0 1 2 1 0 0
-0 1 2 3 2 1 0
-1 2 3 B 3 2 1
-0 1 2 3 2 1 0
-0 0 1 2 1 0 0
-0 0 0 1 0 0 0
+0 0 1 0 0
+0 2 3 2 0
+1 3 B 3 1
+0 2 3 2 0
+0 0 1 0 0
 
 There are many issues with this board evaluator, but given my limited knowledge of Go strategies its one of the few things I could think to examine (even if perhaps it takes a long time to calculate).  In order to create a better board evaluator I would need to spend sigificant more time into researching heuristics for Go and to have more experience with the game.  That said, I'm very happy knowing that my minimax algorithm works (as I tested using some random tree values and the back propogation works just fine) and that I have at least some board evaluator as well.
 
-After getting everything working, I tried playing a game and ran into a space error seaching at depth 4 and on a 9x9 board (unsuprisingly).  I had to reduce down to a search depth of 2 and play on an even smaller board (size 6) to get moves from the opponent in any "reasonable" time frame.  That said, my algorithm works kind of like how I'd expect--it plays moves to remove influence of its opponents stones and plays spaced apart to maximize its own influence.  A 6x6 is fairly degenerate, since there's not much play for moves, but that's okay.
+After getting everything working, I tried playing a game and ran into a space error seaching at depth 4 and on a 9x9 board (unsuprisingly).  I had to reduce down to a search depth of 2 and play on an even smaller board (size 5) to get moves from the opponent in any "reasonable" time frame.  That said, my algorithm works kind of like how I'd expect--it plays moves to remove influence of its opponents stones and plays spaced apart to maximize its own influence.  A 5x5 is fairly degenerate, since there's not much play for moves, but that's okay.
 
 Personally I believe that the run time is still incredibly slow, at least for the first few moves--as the amount of moves goes down the program speeds up considerably.  A goal I was hoping for at the beginning of the project but unable to focus on was optimization.  I tried to be careful where possible when building my program, but the major issue is that I'm unsure where to analyze where my problems lie (at least in Lisp).  For example, in Python there's a nice library called profiler which can run a function and tell you where it spent its runtime.  For my program I'm not sure if improvements need to be made on populating the tree with nodes, my board evaluator, a more efficient algorithm (such as alpha-beta pruning), or even making the game rules more optimized.
 
 I guess this presents a problem which all people workin projects face: where to go next.  If I were to work on this project in the future, improving the run time would be the first thing I would aim at.  Then after that I would want to work on developing (and comparing) various heuristics and play them against each other to see which programs do the best.  I would also love to implement a monte carlo search method, because I think the method sounds very interesting and would like to explore how it compares to my (likely horrible) heurstics in a minimax method.
+
+========== Demo discussion ==========
+
+Included is a small demo file.  It shows two things: the sample values from a minimax tree and a sample game.  The first is to just verify that the minimax tree obtains values as it should.  The visual representation is not the best, but the root starts at the left and each indentation indicates children.  It should be very clear by looking at the output values that the tree is generated properly.
+
+The next is a sample game played with the computer.  It's on a 5x5 board for computation time reasons.  However, one can see that the algorithm does an okay job.  It looks at the influence each stone has.  We see at the beginning it tries to play in open spaces as to maximize its influence.  Later it even tries to protect itself from capture a little bit, and it also sees when it can take captures of its own.

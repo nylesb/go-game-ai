@@ -13,7 +13,7 @@
    (ko :initarg :ko :accessor ko)
    (move :initarg :move :accessor move)))
 
-(defun minimax-move (available-moves color board)
+(defun minimax-move (available-moves color board &key examine-tree)
   "Given a board state, returns a move for color decided on using a minimax
   algorithm. No optimization methods have been applied, so the search copy-tree
   grows symmetrically (severely increasing run time)."
@@ -30,7 +30,9 @@
     (dolist (child (children root)) ; Find best move
       (if (equal (value child) (value root))
           (push (move child) choices)))
-    (print (nth (random (length choices)) choices))))
+    (if examine-tree
+        (print-children root 0))
+    (nth (random (length choices)) choices)))
 
 (defun generate-children (node depth)
   "Generates all children of node down to a certain depth."
@@ -62,11 +64,12 @@
          (range 2)
          (token nil)
          (sum 0))
+    ;; Create list of all positions, the fill in empty spaces with zeroes.
     (dotimes (i board-size)
       (dotimes (j board-size)
         (nconc positions (list (list i j)))))
     (setf positions (rest positions)) ; Fixes double '(0 0) issue
-    (dolist (space positions) ; Initialize board with zeroes
+    (dolist (space positions)
       (if (equal (at space board-copy) '-)
           (at space board-copy :set 0)))
     (labels ((fill (position sign depth)
@@ -105,10 +108,10 @@
               (setf best (value child)))))
     (setf (value root) best)))
 
-(defun print-children (root depth function)
-  "A tree traversal algorithm.  Can modify it to display characteristics of
+(defun print-children (root depth)
+  "A tree traversal algorithm.  Can modify data to display characteristics of
   nodes, and the algorithm will display the information in a semi-nice way."
-  (let ((data (funcall function board)))
+  (let ((data (value root)))
     ;; Use spacing to indicate children
     (princ (format nil "~A~A~%" (make-string (* 4 depth) :initial-element #\Space) data))
     (dolist (child (children root))
