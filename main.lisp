@@ -1,35 +1,36 @@
+;;;; Implemenation file for an interface and rule set to play a game of Go
+;;;; between two players, one potentially an AI.
+
 (load "minimax.lisp")
 
 (defun play-game ()
-  "Does the interfacing for a 2-player Go game."
-  (let* ((board-size 9)
+  "Does the interfacing for a 2-player Go game, one potentially an AI."
+  (let* ((board-size 6)
          (board (list (make-list board-size :initial-element '-)))
          (move nil)
-         (available-moves '((0 0)))
+         (available-moves nil)
          (captures nil)
          (w-captures 0)
          (b-captures 0)
          (ko '(nil)))
-    ;; Populate initial available moves
-    (dotimes (i board-size)
-      (dotimes (j board-size)
-        (nconc available-moves (list (list i j)))))
-    (setf available-moves (rest available-moves)) ; Fixes '(0 0) repetition
-    ;; Create empty board
+    ;; Create empty board & populate list of initial available moves
     (dotimes (i (- board-size 1))
       (nconc board (list (make-list board-size :initial-element '-))))
+    (dotimes (i board-size)
+      (dotimes (j board-size)
+        (push (list i j) available-moves)))
     ;; Begin game playing
     (print-board board)
     (princ (format nil "~%Your move: "))
     (loop while (not (equal (setf move (read)) 'end)) do
-      ;; Player's move
+      ;; First player's move
       (setf move (process-move move))
       (loop while (not (find move available-moves :test #'equal)) do
         (princ (format nil "~%Invalid move!  Try again: "))
         (setf move (process-move (read))))
-      (make-move move 'B available-moves ko board)
+      (setf b-captures (+ b-captures (make-move move 'B available-moves ko board)))
       
-      ;;; 2-Player's move
+      ;; Use for human as second player
       ;(print-board board)
       ;(princ (format nil "~%Your move: "))
       ;(setf move (process-move (read)))
@@ -38,17 +39,16 @@
       ;  (setf move (process-move (read))))
       ;(make-move move 'W available-moves ko board)
       
-      ;;; AI's move
+      ;; Use for AI as second player.
       (setf move (minimax-move available-moves 'W board))
-      (setf available-moves (delete move available-moves :test #'equal))
-      (make-move move 'W available-moves ko board)
+      (setf w-captures (+ w-captures (make-move move 'W available-moves ko board)))
       
       ;; Display
       (print-board board)
       (princ (format nil "~%Your move: ")))))
 
 (defun neighbors (position)
-  "Returns a list containing all neighbors of a position."
+  "Returns a list containing all neighbors of a position, even if off board."
   (let* ((row (first position))
          (col (second position))
          (neighbors (list (list (- row 1) col))))
@@ -57,7 +57,8 @@
                            (list row (- col 1))))))
 
 (defun print-board (board)
-  "Formats board for readable printing"
+  "Prints the board (a list) in a more human-readable fashion with row/col labels
+  and nicer formatting."
   (let ((row-labels "ABCDEFGHIJKLMNOPQRS") ; Supports up to 19x19 board
         (row-index 0))
     (terpri)
@@ -79,18 +80,20 @@
 
 (defun process-move (symbol)
   "Takes a move like 'E7' (as a symbol) and processes it to find the proper
-  indices for the game board."
+  indices for the game board.  Produces error of symbol not formmated right."
   (let ((symbol-string (symbol-name symbol)))
     (list (position (char symbol-string 0) "ABCDEFGHIJKLMNOPQRS")
           (- (parse-integer (subseq symbol-string 1)) 1))))
 
 (defun make-move (move color available-moves ko board)
   "Updates board and available-moves with the given move for color.
-  Note: ko is a 1-element list containing nil or the ko position.
-  Returns number of captures made."
+  Returns number of captures made (assumes color made the capture).
+  Assert: ko is a 1-element list containing nil or the ko position."
   (let ((captures nil)
         (last nil))
-    (if (equal (first available-moves) move) ; Delete doesn't work for 1st elt
+    ;; Remove move from available moves.  Delete doesn't work for 1st elt in
+    ;; a list though, so the if lets us be more clever in this case
+    (if (equal (first available-moves) move)
         (progn (setf last (first (last available-moves)))
                (delete last available-moves :test #'equal)
                (setf (car available-moves) last))
@@ -105,17 +108,13 @@
     (length captures)))
 
 (defun append-modify (list1 list2)
-  "Redefines list1 to list2 appended to list1.  Works inside functions which
-  takes lists as parameters to update the actual variable put into the function."
+  "Sets list1 to list2 appended to list1.  Works inside functions which
+  take lists as parameters to update the actual variable put into the function."
   (setf (cdr list1) (append (cdr list1) list2)))
-
-(defun random-move (available-moves)
-  "Returns a valid random move given the current board."
-  (nth (random (length available-moves)) available-moves))
 
 (defun at (position board &key set)
   "Returns the token at position on board. Returns X if position off board.
-  If set is not nil, update this position with value of set."
+  If set is not nil, update position with value of set."
   (let ((row (first position))
         (col (second position))
         (board-size (length board)))
@@ -126,8 +125,9 @@
         (nth col (nth row board)))))
 
 (defun is-free (position board)
-  "Determines if the stone at position is free by using a recoloring each stone
-  attached to position while looking for a free liberty, then filling it back."
+  "Determines if the stone at position is free by recoloring each stone
+  attached to position while looking for a free liberty, then filling it back.
+  (Algorithm like a paint program fill pixel algorithm, hence the naming below.)"
   (let ((result nil)
         (board-color (at position board))
         (marker 'M))
@@ -139,7 +139,8 @@
          If an open liberty is found, coloring stops."
          (labels
            ((ff (position board old-color new-color)
-              "Inner function for flood-fill allowing us to terminate early."
+              "Inner function for flood-fill allowing us to terminate early
+              upon finding the goal (a free liberty)."
               (let ((row (first position))
                     (col (second position))
                     (color (at position board)))
@@ -186,58 +187,6 @@
         (capture position board color))
     captured-list)))
 
-(defun is-eye (position board)
-  "Position is an empty space on board. Determines if it is an eye (a space
-  surrounded by 1 chain of all the same color).  Returns eye color if true."
-  (let ((result 0) ; How many surrounding stones we've found
-        (goal 4) ; How many surrounding stones we need
-        (origin 'O) ; To remember where we started at
-        (marker 'M) ; A token to see where we've been
-        (neighbors (neighbors position))
-        (color nil)
-        (row (first position))
-        (col (second position))
-        (board-length (length board)))
-    (labels
-      ((flood-fill (position board old-color new-color)
-         "Fills up the chain of color, replacing spaces with a marker.
-         If original space is found, coloring stops."
-         (let ((row (first position))
-               (col (second position))
-               (color (at position board)))
-           (when (equal color origin)
-             (setf result (+ result 1)))
-           (if (equal color new-color)
-               (return-from flood-fill nil))
-           (when (equal color old-color)
-             (at position board :set new-color)
-             (flood-fill (list (- row 1) col) board old-color new-color)
-             (flood-fill (list row (+ col 1)) board old-color new-color)
-             (flood-fill (list (+ row 1) col) board old-color new-color)
-             (flood-fill (list row (- col 1)) board old-color new-color)))))
-      ;; Check for one chain surrounding position
-      ;; After a B or W stone found, no need to check other neighbors
-      (block control
-        (dolist (space neighbors)
-          (setf color (at space board))
-          (when (or (equal color 'W) (equal color 'B))
-            (at position board :set origin)
-            (flood-fill space board color marker)
-            (at position board :set '-)
-            (flood-fill space board marker color)
-            (return-from control nil))))
-      ;; Reduce goal if stone on edge
-      (if (or (= row 0) (= row (- board-length 1)))
-          (setf goal (- goal 1)))
-      (if (or (= col 0) (= col (- board-length 1)))
-          (setf goal (- goal 1)))
-      (if (= result goal)
-          color
-          nil))))
-
-(defun game-over (available-moves board)
-  "Evaluates the board to determine if only eyes remain."
-  (dolist (space available-moves)
-    (unless (is-eye space board)
-      (return-from game-over nil)))
-  t)
+(defun random-move (available-moves)
+  "Returns a valid random move given the current board."
+  (nth (random (length available-moves)) available-moves))
